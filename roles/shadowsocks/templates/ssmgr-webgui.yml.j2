@@ -1,0 +1,54 @@
+type: m
+empty: false
+
+manager:
+  address: {{ host_name }}:6002
+  password: '{{ ssmgr_password }}'
+plugins:
+  flowSaver:
+    use: true
+  user:
+    use: true
+  account:
+    use: true
+    pay:
+      hour:
+        price: 0.03
+        flow: 500000000
+      day:
+        price: 0.5
+        flow: 7000000000
+      week:
+        price: 3
+        flow: 50000000000
+      month:
+        price: 10
+        flow: 200000000000
+      season:
+        price: 30
+        flow: 200000000000
+      year:
+        price: 120
+        flow: 200000000000
+  email:
+    use: true
+    username: '{{ smtp_username }}'
+    password: '{{ smtp_password }}'
+    host: 'smtp.gmail.com'
+    # 这部分的邮箱和密码是用于发送注册验证邮件，重置密码邮件
+  webgui:
+    use: true
+    host: '127.0.0.1'
+    port: '8080'
+    site: 'https://{{ host_name }}'
+    gcmSenderId: '373142352229'
+    gcmAPIKey: '{{ gcm_api_key }}'
+  alipay:
+    use: false
+    appid: 0
+    notifyUrl: 'http://yourwebsite.com/api/user/alipay/callback'
+    merchantPrivateKey: 'xxxxxxxxxxxx'
+    alipayPublicKey: 'xxxxxxxxxxx'
+    gatewayUrl: 'https://openapi.alipay.com/gateway.do'
+
+db: 'webgui.sqlite'

@@ -1,0 +1,19 @@
+- name: add service config file
+  template: src=../templates/service.sh.j2 dest=/etc/init.d/{{ service_name }} owner=root group=root mode=0740
+
+- name: ensure file exists
+  copy:
+    content: ""
+    dest: "/var/log/{{ service_name }}.log"
+    group: "{{ service_username }}"
+    owner: "{{ service_username }}"
+    mode: 0640
+
+- name: set defaults
+  command: "update-rc.d {{ service_name }} defaults"
+
+- name: reload systemd daemon
+  command: systemctl daemon-reload
+
+- name: restart service
+  command: "systemctl restart {{ service_name }}"

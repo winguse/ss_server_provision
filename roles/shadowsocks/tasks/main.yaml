@@ -1,0 +1,84 @@
+- name: Install nginx and letsencrypt
+  apt: name={{ item }} state=present
+  with_items:
+    - nginx
+    - letsencrypt
+
+- name: update pip and setup tools to latest
+  become: yes
+  pip: name={{item}} state=latest
+  with_items:
+    - pip
+    - setuptools
+
+- name: install shadowsocks
+  pip: name=git+https://github.com/shadowsocks/shadowsocks.git@master editable=false
+  become: yes
+
+- name: Install "shadowsocks-manager" node.js package globally.
+  command: npm i -g shadowsocks-manager
+  # not working:
+  # npm:
+  #   name: shadowsocks-manager
+  #   global: yes
+  #   state: latest
+
+- name: ensure run folder
+  file:
+    path: "/home/{{ non_priviliged_user }}/.ssmgr"
+    state: directory
+    mode: 0750
+    owner: "{{ non_priviliged_user }}"
+    group: "{{ non_priviliged_user }}"
+
+- name: add nginx default config
+  template: src=../templates/nginx.j2 dest=/etc/nginx/sites-available/default owner=root group=root mode=0644
+
+- name: add ss default config
+  template: src=../templates/ss-config.json.j2 dest=/home/{{ non_priviliged_user }}/.ssmgr/ss-config.json owner={{ non_priviliged_user }} group={{ non_priviliged_user }} mode=0640
+
+- name: add ssmgr config
+  template: src=../templates/ssmgr.yml.j2 dest=/home/{{ non_priviliged_user }}/.ssmgr/default.yml owner={{ non_priviliged_user }} group={{ non_priviliged_user }} mode=0640
+
+- name: add ssmgr webgui config
+  template: src=../templates/ssmgr-webgui.yml.j2 dest=/home/{{ non_priviliged_user }}/.ssmgr/ssmgr-webgui.yml owner={{ non_priviliged_user }} group={{ non_priviliged_user }} mode=0640
+
+- name: setup shadowsocks service
+  include: service.yaml
+  vars:
+    service_name: shadowsocks
+    service_username: "{{ non_priviliged_user }}"
+    service_description: shadowsocks main
+    service_command: "ssserver --manager-address 127.0.0.1:6001 -c /home/{{ non_priviliged_user }}/.ssmgr/ss-config.json"
+
+- name: setup ssmgr service
+  include: service.yaml
+  vars:
+    service_name: ssmgr
+    service_username: "{{ non_priviliged_user }}"
+    service_description: shadowsocks manager
+    service_command: ssmgr
+
+- name: setup ssmgr webgui service
+  include: service.yaml
+  vars:
+    service_name: ssmgr-web
+    service_username: "{{ non_priviliged_user }}"
+    service_description: shadowsocks manager
+    service_command: "ssmgr -c /home/{{ non_priviliged_user }}/.ssmgr/ssmgr-webgui.yml"
+
+- name: firewall system rules
+  ufw:
+    rule: allow
+    proto: tcp
+    port: '{{ item }}'
+  with_items:
+    - 22
+    - 80
+    - 443
+    - 12313
+    - '50000:60000'
+
+- name: enable UFW
+  ufw:
+    state: enabled

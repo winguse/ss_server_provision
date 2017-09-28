@@ -1,0 +1,68 @@
+# swap
+- name: Check whether swap is already enabled or not
+  shell: cat /etc/sysctl.conf
+  register: swap_enabled
+
+- include: swap.yaml
+  when: swap_enabled.stdout.find('swappiness') == -1
+
+# apt
+- name: Update our package cache if necessary
+  apt: update_cache=yes cache_valid_time=3600
+
+- name: Install various packages useful for all applications and sysadmin
+  apt: name={{ item }} state=present
+  with_items:
+    - vim
+    - htop
+    - aptitude
+    - build-essential
+
+- name: Install python-virtualenv and other useful python stuff
+  apt: name=python-virtualenv state=present
+
+- name: Install pip - pt. 1
+  apt: name=python-pip state=latest
+
+- name: Install pip - pt. 2
+  pip: name="pip" state=latest
+
+- name: Do all security upgrades
+  apt: upgrade=full
+
+# create user
+- name: create non-priviliged user
+  user: name={{ non_priviliged_user }} shell=/bin/bash generate_ssh_key=yes state=present
+
+# prompt
+- name: add prompt file
+  template: src=bash_prompt.sh.j2 dest=/etc/winguse_bash_prompt.rc
+
+- name: link prompt file to bash.rc
+  lineinfile: >
+    dest={{ item }}/.bashrc
+    regexp="^\. /etc/winguse_bash_prompt.rc"
+    line=". /etc/winguse_bash_prompt.rc"
+  with_items:
+    - /root
+
+# python ssl related
+- name: ssl packages
+  apt: name={{ item }} state=present
+  with_items:
+    - libffi-dev
+    - libssl-dev
+    - python-dev
+    - python-openssl
+    - python-setuptools
+
+- name: install latest version of ndg-httpsclient
+  pip: name={{ item }} state=latest
+  with_items:
+    - ndg-httpsclient
+    - pyasn1
+
+- name: various other useful Python packages
+  pip: name={{ item }} state=latest
+  with_items:
+    - boto

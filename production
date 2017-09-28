@@ -1,0 +1,10 @@
+[vpn]
+
+# make alias in your ~/.ssh/config, something like the following:
+#
+# Host server-ssh-alias
+#   HostName your.example.com
+#   User your_username
+#   IdentityFile ~/.ssh/id_rsa
+
+server-ssh-alias host_name=your.example.com
